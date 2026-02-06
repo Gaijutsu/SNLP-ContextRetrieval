@@ -446,6 +446,168 @@ def compare(
 
 @cli.command()
 @click.option(
+    '--config', '-c',
+    type=click.Path(exists=True, path_type=Path),
+    help='Configuration file to estimate cost for'
+)
+@click.option(
+    '--dataset', '-d',
+    type=click.Choice(['lite', 'verified', 'full']),
+    help='Dataset name'
+)
+@click.option(
+    '--model', '-m',
+    type=str,
+    default='gpt-5-mini',
+    help='Model name (default: gpt-5-mini)'
+)
+@click.option(
+    '--instances', '-n',
+    type=int,
+    help='Number of instances (overrides dataset)'
+)
+@click.option(
+    '--prompt-tokens', '-p',
+    type=int,
+    default=2000,
+    help='Average prompt tokens per instance (default: 2000)'
+)
+@click.option(
+    '--completion-tokens', '-t',
+    type=int,
+    default=1000,
+    help='Average completion tokens per instance (default: 1000)'
+)
+@click.pass_context
+def estimate_cost(
+    ctx: click.Context,
+    config: Optional[Path],
+    dataset: Optional[str],
+    model: str,
+    instances: Optional[int],
+    prompt_tokens: int,
+    completion_tokens: int
+) -> None:
+    """
+    Estimate the cost of running an experiment.
+    
+    This command estimates the cost based on dataset size, model pricing,
+    and expected token usage.
+    
+    Examples:
+        \b
+        # Estimate from config file
+        swe-compare estimate-cost --config configs/full_comparison.yaml
+        
+        \b
+        # Estimate for specific dataset and model
+        swe-compare estimate-cost --dataset verified --model gpt-5-mini
+        
+        \b
+        # Estimate with custom token usage
+        swe-compare estimate-cost --dataset lite --prompt-tokens 3000 --completion-tokens 1500
+    """
+    from .evaluation.metrics.token_usage import TokenUsageMetric
+    
+    # Determine number of instances
+    num_instances = instances
+    num_methods = 1
+    
+    dataset_sizes = {'lite': 300, 'verified': 500, 'full': 2294}
+    
+    if config:
+        import yaml
+        with open(config, 'r') as f:
+            cfg = yaml.safe_load(f)
+        
+        dataset_name = cfg.get('dataset', 'lite')
+        if not num_instances:
+            num_instances = dataset_sizes.get(dataset_name, 300)
+        
+        methods = cfg.get('methods', {})
+        num_methods = len(methods) if methods else 1
+        
+        # Try to get model from config
+        for method_name, method_cfg in methods.items():
+            if isinstance(method_cfg, dict) and 'model' in method_cfg:
+                model = method_cfg['model']
+                break
+        
+        click.echo(f"Config: {config}")
+        click.echo(f"  Dataset: {dataset_name} ({num_instances} instances)")
+        click.echo(f"  Methods: {num_methods}")
+        click.echo(f"  Model: {model}")
+    elif dataset and not num_instances:
+        num_instances = dataset_sizes.get(dataset, 300)
+    
+    if not num_instances:
+        click.echo("Error: Please specify --dataset, --instances, or --config")
+        ctx.exit(1)
+    
+    # Get pricing
+    pricing = TokenUsageMetric.DEFAULT_PRICING
+    model_pricing = {'prompt': 0.01, 'completion': 0.03}  # Default
+    for key, price in pricing.items():
+        if key in model.lower():
+            model_pricing = price
+            break
+    
+    # Calculate costs
+    prompt_cost = (prompt_tokens / 1000) * model_pricing['prompt']
+    completion_cost = (completion_tokens / 1000) * model_pricing['completion']
+    cost_per_instance = prompt_cost + completion_cost
+    
+    total_instances = num_instances * num_methods
+    total_cost = cost_per_instance * total_instances
+    total_tokens = (prompt_tokens + completion_tokens) * total_instances
+    
+    # Print report
+    click.echo("\n" + "=" * 70)
+    click.echo("COST ESTIMATION REPORT")
+    click.echo("=" * 70)
+    
+    click.echo(f"\n[DATASET & METHODS]")
+    click.echo(f"  Model: {model}")
+    click.echo(f"  Instances per method: {num_instances}")
+    click.echo(f"  Number of methods: {num_methods}")
+    click.echo(f"  Total instances: {total_instances}")
+    
+    click.echo(f"\n[PRICING] (per 1K tokens)")
+    click.echo(f"  Prompt: ${model_pricing['prompt']:.4f}")
+    click.echo(f"  Completion: ${model_pricing['completion']:.4f}")
+    
+    click.echo(f"\n[TOKEN USAGE] (avg per instance)")
+    click.echo(f"  Prompt: {prompt_tokens:,} tokens")
+    click.echo(f"  Completion: {completion_tokens:,} tokens")
+    click.echo(f"  Total: {prompt_tokens + completion_tokens:,} tokens")
+    
+    click.echo(f"\n[COST BREAKDOWN]")
+    click.echo(f"  Cost per instance: ${cost_per_instance:.4f}")
+    click.echo(f"  " + "-" * 35)
+    click.echo(f"  TOTAL ESTIMATED COST: ${total_cost:.2f}")
+    click.echo(f"  " + "-" * 35)
+    
+    click.echo(f"\n[TOTAL TOKEN USAGE]")
+    click.echo(f"  Total tokens: {total_tokens:,}")
+    
+    if total_cost > 100:
+        click.echo("\n[!] WARNING: Estimated cost exceeds $100!")
+    elif total_cost > 50:
+        click.echo("\n[!] WARNING: Estimated cost exceeds $50!")
+    elif total_cost > 10:
+        click.echo("\n[!] NOTE: Estimated cost exceeds $10.")
+    
+    click.echo("\n" + "=" * 70)
+    click.echo("[TIPS] To reduce cost:")
+    click.echo("  * Use a smaller dataset (lite=300, verified=500, full=2294)")
+    click.echo("  * Use gpt-5-mini instead of gpt-5 or gpt-5-pro")
+    click.echo("  * Reduce max_iterations for agentic methods")
+    click.echo("  * Use instance_ids to test on specific instances first")
+    click.echo("=" * 70 + "\n")
+
+
+@cli.command()
+@click.option(
     '--predictions', '-p',
     type=click.Path(exists=True, path_type=Path),
     required=True,

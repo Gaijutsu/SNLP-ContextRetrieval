@@ -33,7 +33,7 @@ class TokenUsageMetric(AggregateMetric):
     # Default pricing per 1K tokens (approximate)
     DEFAULT_PRICING = {
         'gpt-5': {'prompt': 0.005, 'completion': 0.015},
-        'gpt-5-mini': {'prompt': 0.001, 'completion': 0.003},
+        'gpt-5-mini': {'prompt': 0.00025, 'completion': 0.002},
         'gpt-5-pro': {'prompt': 0.01, 'completion': 0.03},
         'gpt-4o': {'prompt': 0.0025, 'completion': 0.01},
         'gpt-4o-mini': {'prompt': 0.00015, 'completion': 0.0006},
