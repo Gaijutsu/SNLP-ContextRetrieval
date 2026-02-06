@@ -1,0 +1,50 @@
+# Minimal Configuration
+# Single method, minimal configuration for quick testing
+
+experiment_name: "minimal_test"
+output_dir: "./results/minimal"
+
+# Dataset configuration
+dataset: "lite"
+
+# Run on specific instances for quick testing
+# Using correct SWE-bench format: repo__repo-number
+instance_ids:
+  - "django__django-11039"
+  - "sphinx-doc__sphinx-8721"
+
+# Repository configuration
+repos_dir: "./repos"
+
+# Sandbox configuration
+sandbox: "docker"
+
+# Single method for quick testing
+methods:
+  agentless:
+    type: "agentic"
+    strategy: "agentless"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 1.0
+      max_tokens: 2048
+    agentic_config:
+      max_iterations: 5  # Reduced for speed
+      search_depth: 2
+
+# Minimal evaluation
+evaluation:
+  metrics:
+    - "resolution"
+
+# Simple reporting
+report:
+  formats:
+    - "json"
+
+# Experiment tracking
+tracking:
+  enabled: true
+  backend: "mlflow"
+  experiment_name: "swe_bench_comparison"
+  uri: "http://localhost:5000"

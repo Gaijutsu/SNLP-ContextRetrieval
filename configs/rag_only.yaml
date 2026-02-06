@@ -1,0 +1,136 @@
+# RAG-Only Configuration
+# Compare different RAG retrieval methods
+
+experiment_name: "rag_comparison"
+output_dir: "./results/rag_comparison"
+
+# Dataset configuration
+dataset: "lite"
+
+# Repository configuration
+repos_dir: "./repos"
+
+# Sandbox configuration
+sandbox: "local"
+
+# Parallel execution
+max_workers: 2
+
+# RAG methods to compare
+methods:
+  # BM25: Traditional keyword-based retrieval
+  bm25_rag:
+    type: "rag"
+    retrieval: "bm25"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    rag_config:
+      top_k: 10
+      chunk_size: 1000
+      chunk_overlap: 200
+      use_query_expansion: false
+  
+  # BM25 with query expansion
+  bm25_expanded_rag:
+    type: "rag"
+    retrieval: "bm25"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    rag_config:
+      top_k: 10
+      chunk_size: 1000
+      chunk_overlap: 200
+      use_query_expansion: true
+      query_expansion_model: "gpt-5-mini"
+      num_expansions: 3
+  
+  # Dense: Neural embedding-based retrieval
+  dense_rag:
+    type: "rag"
+    retrieval: "dense"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    rag_config:
+      top_k: 10
+      chunk_size: 1000
+      chunk_overlap: 200
+      embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+      use_query_expansion: false
+  
+  # Dense with better model
+  dense_better_rag:
+    type: "rag"
+    retrieval: "dense"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    rag_config:
+      top_k: 10
+      chunk_size: 1000
+      chunk_overlap: 200
+      embedding_model: "sentence-transformers/all-mpnet-base-v2"
+      use_query_expansion: false
+  
+  # Hybrid: Combines BM25 and dense retrieval
+  hybrid_rag:
+    type: "rag"
+    retrieval: "hybrid"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    rag_config:
+      top_k: 10
+      chunk_size: 1000
+      chunk_overlap: 200
+      embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+      bm25_weight: 0.3
+      dense_weight: 0.7
+      rerank: false
+  
+  # Hybrid with reranking
+  hybrid_rerank_rag:
+    type: "rag"
+    retrieval: "hybrid"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    rag_config:
+      top_k: 10
+      chunk_size: 1000
+      chunk_overlap: 200
+      embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+      bm25_weight: 0.3
+      dense_weight: 0.7
+      rerank: true
+      rerank_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+      rerank_top_k: 5
+
+# Evaluation configuration
+evaluation:
+  metrics:
+    - "resolution"
+    - "pass_at_k"
+    - "localization"
+    - "token_usage"
+  pass_at_k_values: [1, 5, 10]
+
+# Reporting configuration
+report:
+  formats:
+    - "json"
+    - "markdown"
+  include_visualizations: true
+
+# Logging configuration
+logging:
+  level: "INFO"
+  save_logs: true

@@ -1,0 +1,118 @@
+{
+  "metadata": {
+    "generated_at": "2026-02-06T03:16:50.639200",
+    "version": "1.0.0"
+  },
+  "summary": {
+    "num_methods": 1,
+    "methods": [
+      "agentless"
+    ],
+    "total_instances": 2,
+    "best_method": "agentless",
+    "resolution_rates": {
+      "agentless": 0.0
+    }
+  },
+  "method_comparison": {
+    "agentless": {
+      "total_instances": 2,
+      "resolved": 0,
+      "unresolved": 2,
+      "resolution_rate": 0.0,
+      "patch_apply_rate": 0.0,
+      "avg_execution_time": 0.25550198554992676,
+      "avg_codebleu": 0.0,
+      "localization": {},
+      "config": {
+        "type": "agentic",
+        "enabled": true,
+        "config": {
+          "strategy": "agentless",
+          "model": "gpt-5-mini",
+          "model_config": {
+            "temperature": 1.0,
+            "max_tokens": 2048
+          },
+          "agentic_config": {
+            "max_iterations": 5,
+            "search_depth": 2
+          }
+        }
+      }
+    }
+  },
+  "statistical_analysis": {
+    "significance_tests": {},
+    "confidence_intervals": {
+      "agentless": {
+        "point_estimate": 0.0,
+        "lower_bound": 0,
+        "upper_bound": 65.76,
+        "confidence_level": 0.95
+      }
+    },
+    "effect_sizes": {}
+  },
+  "detailed_results": {
+    "agentless": [
+      {
+        "instance_id": "django__django-11039",
+        "resolved": false,
+        "patch_applied": false,
+        "tests_passed": 0,
+        "tests_failed": 1,
+        "codebleu_score": 0.0,
+        "execution_time": 0.37460875511169434
+      },
+      {
+        "instance_id": "sphinx-doc__sphinx-8721",
+        "resolved": false,
+        "patch_applied": false,
+        "tests_passed": 0,
+        "tests_failed": 1,
+        "codebleu_score": 0.0,
+        "execution_time": 0.13639521598815918
+      }
+    ]
+  },
+  "visualization_data": {
+    "resolution_comparison": {
+      "labels": [
+        "agentless"
+      ],
+      "values": [
+        0.0
+      ]
+    },
+    "localization_comparison": {
+      "agentless": {}
+    },
+    "time_comparison": {
+      "labels": [
+        "agentless"
+      ],
+      "avg_times": [
+        0.25550198554992676
+      ]
+    },
+    "per_instance_comparison": [
+      {
+        "instance_id": "django__django-11039",
+        "agentless": {
+          "resolved": false,
+          "patch_applied": false,
+          "codebleu": 0.0
+        }
+      },
+      {
+        "instance_id": "sphinx-doc__sphinx-8721",
+        "agentless": {
+          "resolved": false,
+          "patch_applied": false,
+          "codebleu": 0.0
+        }
+      }
+    ]
+  }
+}

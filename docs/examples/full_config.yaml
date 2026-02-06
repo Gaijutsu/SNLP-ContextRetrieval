@@ -1,0 +1,502 @@
+# Full Configuration Example
+#
+# This is a comprehensive configuration demonstrating all available options.
+# Use this as a reference for advanced experiments.
+
+# =============================================================================
+# EXPERIMENT CONFIGURATION
+# =============================================================================
+
+experiment:
+  name: "comprehensive_comparison"
+  description: "Full comparison of all methods on SWE-bench Verified"
+  output_dir: "./results/full"
+  random_seed: 42
+  
+  # Checkpointing for long-running experiments
+  checkpoint:
+    enabled: true
+    interval: 10  # Save checkpoint every 10 instances
+    resume: true  # Allow resuming from checkpoint
+
+# =============================================================================
+# DATASET CONFIGURATION
+# =============================================================================
+
+dataset:
+  name: "swe-bench-verified"  # Options: swe-bench-lite, swe-bench-verified, swe-bench-full
+  split: "test"
+  
+  # Filtering options
+  filter:
+    # Filter by specific repositories
+    repos:
+      - "django"
+      - "scikit-learn"
+      - "pytest"
+      - "sympy"
+    
+    # Limit number of instances (for testing)
+    # max_instances: 100
+    
+    # Filter by date range
+    # date_from: "2020-01-01"
+    # date_to: "2023-12-31"
+    
+    # Filter by issue characteristics
+    # min_files_modified: 1
+    # max_files_modified: 5
+
+# =============================================================================
+# LLM CONFIGURATION
+# =============================================================================
+
+llm:
+  provider: "openai"  # Options: openai, anthropic, azure, local
+  model: "gpt-4-turbo-preview"
+  temperature: 0.0
+  max_tokens: 4096
+  top_p: 1.0
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+  
+  # API configuration
+  api_key: "${OPENAI_API_KEY}"
+  base_url: null  # For custom endpoints
+  
+  # Rate limiting
+  rate_limit:
+    requests_per_minute: 60
+    tokens_per_minute: 150000
+    retry_attempts: 3
+    retry_delay: 1.0  # seconds
+  
+  # Caching
+  cache:
+    enabled: true
+    directory: "./cache/llm"
+    max_size: "10gb"
+
+# =============================================================================
+# METHODS CONFIGURATION
+# =============================================================================
+
+methods:
+  # ===========================================================================
+  # RAG METHODS
+  # ===========================================================================
+  
+  # Method 1: BM25 (Sparse Retrieval)
+  - name: "bm25"
+    type: "rag"
+    enabled: true
+    config:
+      retrieval:
+        top_k: 20
+        query_expansion: true
+        query_expansion_model: "gpt-3.5-turbo"
+      
+      indexing:
+        chunking:
+          strategy: "ast"  # Options: ast, recursive, sliding
+          max_chunk_size: 500
+          overlap: 50
+          language: "python"
+        
+        bm25:
+          k1: 1.5
+          b: 0.75
+          tokenizer: "code"  # Options: code, whitespace, word
+          field_weights:
+            filename: 5.0
+            content: 1.0
+            docstring: 2.0
+
+  # Method 2: Dense Retrieval (Embeddings)
+  - name: "dense"
+    type: "rag"
+    enabled: true
+    config:
+      retrieval:
+        top_k: 20
+        similarity_metric: "cosine"  # Options: cosine, dot, euclidean
+        similarity_threshold: 0.7
+      
+      indexing:
+        chunking:
+          strategy: "ast"
+          max_chunk_size: 500
+          overlap: 50
+        
+        embeddings:
+          model: "jinaai/jina-embeddings-v2-base-code"
+          batch_size: 32
+          device: "cuda"  # Options: cuda, cpu, auto
+          normalize: true
+          max_length: 8192
+        
+        vector_index:
+          type: "faiss"  # Options: faiss, annoy, hnsw
+          nlist: 100  # For IVF index
+          nprobe: 10
+          metric: "inner_product"
+
+  # Method 3: Hybrid (BM25 + Dense + RRF)
+  - name: "hybrid"
+    type: "rag"
+    enabled: true
+    config:
+      retrieval:
+        sparse_weight: 0.3
+        dense_weight: 0.7
+        rrf_k: 60
+        top_k: 20
+        
+        reranker:
+          enabled: true
+          model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          batch_size: 16
+          top_k: 10
+          max_length: 512
+      
+      indexing:
+        chunking:
+          strategy: "ast"
+          max_chunk_size: 500
+          overlap: 50
+        
+        embeddings:
+          model: "jinaai/jina-embeddings-v2-base-code"
+          batch_size: 32
+          device: "cuda"
+        
+        bm25:
+          k1: 1.5
+          b: 0.75
+
+  # ===========================================================================
+  # AGENTIC METHODS
+  # ===========================================================================
+  
+  # Method 4: AutoCodeRover
+  - name: "autocoderover"
+    type: "agentic"
+    enabled: true
+    config:
+      max_iterations: 50
+      max_time_seconds: 600  # 10 minutes per instance
+      
+      tools:
+        - search_class
+        - search_method_in_class
+        - search_method_in_file
+        - view_file
+        - view_method
+        - grep
+        - find_file
+        - run_test
+        - get_linter_result
+      
+      retrieval:
+        strategy: "stratified"
+        layers:
+          - type: "file"
+            top_k: 5
+          - type: "class"
+            top_k: 10
+          - type: "function"
+            top_k: 20
+      
+      sbfl:
+        enabled: true
+        formula: "ochiai"  # Options: ochiai, tarantula, jaccard, dstar
+        min_score_threshold: 0.1
+      
+      patch_validation:
+        max_attempts: 3
+        linter_enabled: true
+        test_before_submit: false
+      
+      context_sufficiency:
+        enabled: true
+        threshold: 0.8
+
+  # Method 5: SWE-agent
+  - name: "swe_agent"
+    type: "agentic"
+    enabled: true
+    config:
+      max_iterations: 100
+      max_time_seconds: 900  # 15 minutes per instance
+      
+      aci:
+        enable_linter: true
+        enable_test_runner: true
+        file_viewer_lines: 100
+        file_viewer_scroll_lines: 50
+        max_file_size: 100000  # bytes
+        
+        commands:
+          - open
+          - scroll_up
+          - scroll_down
+          - goto
+          - create
+          - edit
+          - search_file
+          - search_dir
+          - find_file
+          - bash
+      
+      react:
+        max_thought_length: 500
+        max_observation_length: 2000
+        min_thought_length: 10
+      
+      exploration:
+        strategy: "breadth_first"  # Options: breadth_first, depth_first, adaptive
+        max_exploration_depth: 5
+        backtrack_on_failure: true
+
+  # Method 6: Agentless
+  - name: "agentless"
+    type: "agentic"
+    enabled: true
+    config:
+      localization:
+        strategy: "hierarchical"
+        file_top_k: 5
+        function_top_k: 10
+        location_top_k: 5
+        
+        # File localization
+        file_localization:
+          method: "bm25"  # Options: bm25, embedding, combined
+          query_expansion: true
+        
+        # Function localization
+        function_localization:
+          method: "ast"  # Options: ast, embedding
+          include_callers: true
+          include_callees: true
+      
+      repair:
+        num_samples: 10
+        temperature: 0.7
+        top_p: 0.95
+        max_tokens: 2048
+      
+      validation:
+        regression_testing: true
+        majority_voting: true
+        ast_normalization: true
+        min_votes: 3
+
+# =============================================================================
+# PATCH GENERATION CONFIGURATION
+# =============================================================================
+
+patch_generation:
+  strategy: "direct"  # Options: direct, iterative, edit_script
+  max_attempts: 3
+  
+  # Strategy-specific settings
+  direct:
+    prompt_template: "default"  # Options: default, detailed, minimal
+    include_repo_structure: true
+    include_imports: true
+  
+  iterative:
+    max_iterations: 5
+    feedback_types:
+      - syntax
+      - test
+      - linter
+    stop_on_success: true
+    feedback_prompt_template: "default"
+  
+  edit_script:
+    edit_types:
+      - replace
+      - insert
+      - delete
+    validate_scripts: true
+    max_edits: 10
+  
+  validation:
+    syntax_check: true
+    test_before_submit: false
+    linter_check: true
+    
+    # Linter settings
+    linter:
+      command: "flake8"
+      args: ["--max-line-length=100"]
+      ignore_codes: ["E501", "W503"]
+
+# =============================================================================
+# EVALUATION CONFIGURATION
+# =============================================================================
+
+evaluation:
+  sandbox:
+    type: "docker"
+    image: "swe-bench/sandbox:latest"
+    timeout: 300  # seconds
+    memory_limit: "4g"
+    cpu_limit: "2.0"
+    
+    # Cache settings
+    cache_level: "env"  # Options: none, base, env, instance
+    cache_directory: "./cache/docker"
+    
+    # Cleanup settings
+    cleanup:
+      enabled: true
+      remove_containers: true
+      remove_images: false
+      keep_failed: true  # Keep containers for failed instances
+  
+  # Metrics to compute
+  metrics:
+    - resolution_rate
+    - localization_accuracy
+    - codebleu
+    - token_usage
+    - semantic_entropy
+    - execution_time
+  
+  # Localization accuracy settings
+  localization:
+    k_values: [1, 3, 5, 10, 20]
+    
+    # What to consider as "predicted"
+    prediction_sources:
+      - context_chunks
+      - patch_files
+  
+  # CodeBLEU settings
+  codebleu:
+    alpha: 0.25  # N-gram weight
+    beta: 0.25   # Weighted n-gram weight
+    gamma: 0.25  # Syntax weight
+    delta: 0.25  # Data-flow weight
+  
+  # Semantic entropy settings
+  semantic_entropy:
+    num_samples: 5
+    embedding_model: "all-MiniLM-L6-v2"
+    clustering_threshold: 0.9
+  
+  # Token usage settings
+  token_usage:
+    cost_per_1k_input: 0.01   # GPT-4 pricing
+    cost_per_1k_output: 0.03  # GPT-4 pricing
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+
+logging:
+  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "structured"  # Options: structured, text
+  
+  outputs:
+    - type: "file"
+      path: "./results/full/logs"
+      rotation: "daily"  # Options: daily, size
+      max_files: 30
+    
+    - type: "stdout"
+      colorize: true
+    
+    - type: "json"
+      path: "./results/full/logs/structured.json"
+  
+  # Experiment tracking
+  experiment_tracking:
+    enabled: true
+    backend: "mlflow"  # Options: mlflow, wandb, tensorboard
+    uri: "${MLFLOW_TRACKING_URI}"
+    
+    # MLflow-specific settings
+    mlflow:
+      experiment_name: "swe-bench-comparison"
+      tags:
+        project: "swe-bench-framework"
+        version: "1.0.0"
+    
+    # Weights & Biases settings
+    wandb:
+      project: "swe-bench-comparison"
+      entity: "your-entity"
+      tags: ["swe-bench", "comparison"]
+
+# =============================================================================
+# PARALLELIZATION CONFIGURATION
+# =============================================================================
+
+parallel:
+  enabled: true
+  max_workers: 4
+  
+  # Worker configuration
+  worker:
+    max_instances_per_worker: 10
+    restart_after_n_instances: 50
+  
+  # Load balancing
+  load_balancing:
+    strategy: "round_robin"  # Options: round_robin, least_loaded
+    consider_instance_complexity: true
+
+# =============================================================================
+# NOTIFICATION CONFIGURATION (Optional)
+# =============================================================================
+
+notifications:
+  enabled: false
+  
+  # Email notifications
+  email:
+    on_completion: true
+    on_failure: true
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "${EMAIL_USERNAME}"
+    password: "${EMAIL_PASSWORD}"
+    from: "experiments@example.com"
+    to:
+      - "researcher@example.com"
+  
+  # Slack notifications
+  slack:
+    on_completion: true
+    on_failure: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#experiments"
+
+# =============================================================================
+# ADVANCED SETTINGS
+# =============================================================================
+
+advanced:
+  # Error handling
+  error_handling:
+    max_retries: 3
+    retry_delay: 5.0
+    continue_on_error: true
+    save_partial_results: true
+  
+  # Memory management
+  memory:
+    max_context_bundles_in_memory: 100
+    serialize_large_bundles: true
+    compression: "gzip"
+  
+  # Debugging
+  debugging:
+    save_intermediate_results: true
+    save_failed_patches: true
+    verbose_logging: false
+    profile_performance: false

@@ -1,0 +1,113 @@
+# Basic Configuration Example
+# 
+# This is a simple configuration that compares two methods:
+# - BM25 (RAG-based sparse retrieval)
+# - AutoCodeRover (agentic exploration)
+#
+# Use this for quick experiments and getting started with the framework.
+
+# Experiment metadata
+experiment:
+  name: "basic_comparison"
+  description: "Simple comparison of BM25 vs AutoCodeRover on SWE-bench Lite"
+  output_dir: "./results/basic"
+  random_seed: 42
+
+# Dataset configuration
+dataset:
+  name: "swe-bench-lite"
+  split: "test"
+  filter:
+    max_instances: 50  # Start with 50 instances for quick testing
+
+# LLM configuration (shared across all methods)
+llm:
+  provider: "openai"
+  model: "gpt-4-turbo-preview"
+  temperature: 0.0  # Deterministic generation
+  max_tokens: 4096
+  top_p: 1.0
+  api_key: "${OPENAI_API_KEY}"  # Read from environment variable
+  rate_limit:
+    requests_per_minute: 60
+    tokens_per_minute: 150000
+
+# Methods to compare
+methods:
+  # Method 1: BM25 (RAG)
+  - name: "bm25"
+    type: "rag"
+    enabled: true
+    config:
+      # Retrieval settings
+      top_k: 20  # Number of chunks to retrieve
+      
+      # Indexing settings
+      indexing:
+        chunking:
+          strategy: "ast"  # Use AST-based chunking
+          max_chunk_size: 500
+          overlap: 50
+        bm25:
+          k1: 1.5  # Term frequency parameter
+          b: 0.75  # Length normalization parameter
+
+  # Method 2: AutoCodeRover (Agentic)
+  - name: "autocoderover"
+    type: "agentic"
+    enabled: true
+    config:
+      # Exploration settings
+      max_iterations: 30  # Maximum exploration steps
+      
+      # Tools available to the agent
+      tools:
+        - search_class
+        - search_method
+        - view_file
+        - grep
+        - run_test
+      
+      # Retrieval strategy
+      retrieval:
+        strategy: "stratified"
+        layers:
+          - type: "file"
+            top_k: 5
+          - type: "class"
+            top_k: 10
+          - type: "function"
+            top_k: 20
+
+# Patch generation configuration
+patch_generation:
+  strategy: "direct"  # Single-pass generation
+  max_attempts: 3     # Retry up to 3 times if validation fails
+  validation:
+    syntax_check: true  # Validate patch syntax
+
+# Evaluation configuration
+evaluation:
+  sandbox:
+    type: "docker"
+    timeout: 300  # 5 minutes per instance
+    memory_limit: "4g"
+  
+  # Metrics to compute
+  metrics:
+    - resolution_rate       # Primary metric
+    - localization_accuracy # Diagnostic metric
+    - token_usage          # Cost analysis
+  
+  # Localization accuracy settings
+  localization:
+    k_values: [1, 3, 5, 10]  # Compute Recall@1, @3, @5, @10
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "structured"  # JSON format for structured logging
+  outputs:
+    - type: "file"
+      path: "./results/basic/logs"
+    - type: "stdout"

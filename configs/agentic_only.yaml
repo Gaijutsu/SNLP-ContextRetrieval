@@ -1,0 +1,195 @@
+# Agentic-Only Configuration
+# Compare different agentic exploration methods
+
+experiment_name: "agentic_comparison"
+output_dir: "./results/agentic_comparison"
+
+# Dataset configuration
+dataset: "lite"
+
+# Repository configuration
+repos_dir: "./repos"
+
+# Sandbox configuration
+sandbox: "local"
+
+# Parallel execution
+max_workers: 2
+
+# Agentic methods to compare
+methods:
+  # ============================================
+  # AutoCodeRover Variants
+  # ============================================
+  
+  # AutoCodeRover: Structured exploration
+  autocoderover:
+    type: "agentic"
+    strategy: "autocoderover"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 15
+      search_depth: 5
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+        - "debug"
+      exploration_strategy: "structured"
+  
+  # AutoCodeRover with deeper search
+  autocoderover_deep:
+    type: "agentic"
+    strategy: "autocoderover"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 30
+      search_depth: 10
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+        - "debug"
+      exploration_strategy: "structured"
+  
+  # ============================================
+  # SWE-agent Variants
+  # ============================================
+  
+  # SWE-agent: Full agent-based approach
+  swe_agent:
+    type: "agentic"
+    strategy: "swe_agent"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 50
+      search_depth: 10
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+        - "debug"
+        - "shell"
+      exploration_strategy: "reactive"
+      use_history: true
+  
+  # SWE-agent with fewer iterations
+  swe_agent_fast:
+    type: "agentic"
+    strategy: "swe_agent"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 20
+      search_depth: 5
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+      exploration_strategy: "reactive"
+      use_history: true
+  
+  # ============================================
+  # Agentless Variants
+  # ============================================
+  
+  # Agentless: Without explicit agent
+  agentless:
+    type: "agentic"
+    strategy: "agentless"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 10
+      search_depth: 3
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+      exploration_strategy: "breadth_first"
+  
+  # Agentless with depth-first search
+  agentless_depth:
+    type: "agentic"
+    strategy: "agentless"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 10
+      search_depth: 5
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+      exploration_strategy: "depth_first"
+  
+  # ============================================
+  # Hybrid Agentic+RAG
+  # ============================================
+  
+  # Agentic with RAG context
+  agentic_rag:
+    type: "hybrid"
+    strategy: "agentless"
+    model: "gpt-5-mini"
+    model_config:
+      temperature: 0.0
+      max_tokens: 4096
+    agentic_config:
+      max_iterations: 10
+      search_depth: 3
+      tools:
+        - "search"
+        - "view"
+        - "edit"
+        - "test"
+      exploration_strategy: "breadth_first"
+    rag_config:
+      top_k: 5
+      retrieval: "hybrid"
+      embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+      use_for_context: true
+
+# Evaluation configuration
+evaluation:
+  metrics:
+    - "resolution"
+    - "pass_at_k"
+    - "localization"
+    - "token_usage"
+    - "semantic_entropy"
+  pass_at_k_values: [1, 5, 10]
+
+# Reporting configuration
+report:
+  formats:
+    - "json"
+    - "markdown"
+  include_visualizations: true
+  include_per_instance_results: true
+
+# Logging configuration
+logging:
+  level: "INFO"
+  save_logs: true

@@ -1,0 +1,121 @@
+{
+  "agentless": {
+    "summary": {
+      "method_name": "agentless",
+      "duration": 58.64717674255371,
+      "resolution_rate": 0.0,
+      "num_instances": 2,
+      "num_errors": 0,
+      "config": {
+        "max_workers": 1,
+        "timeout": null
+      }
+    },
+    "results": [
+      {
+        "instance_id": "django__django-11039",
+        "resolved": false,
+        "patch_applied": false,
+        "tests_passed": [],
+        "tests_failed": [
+          "[\"test_sqlmigrate_for_non_transactional_databases (migrations.test_commands.MigrateTests)\"]"
+        ],
+        "localization_accuracy": {},
+        "codebleu_score": 0.0,
+        "execution_time": 0.37460875511169434,
+        "metadata": {
+          "error": "Failed to apply patch"
+        },
+        "timestamp": "2026-02-06T03:17:49.287907"
+      },
+      {
+        "instance_id": "sphinx-doc__sphinx-8721",
+        "resolved": false,
+        "patch_applied": false,
+        "tests_passed": [],
+        "tests_failed": [
+          "[\"tests/test_ext_viewcode.py::test_viewcode_epub_default\"]"
+        ],
+        "localization_accuracy": {},
+        "codebleu_score": 0.0,
+        "execution_time": 0.13639521598815918,
+        "metadata": {
+          "error": "Failed to apply patch"
+        },
+        "timestamp": "2026-02-06T03:17:49.287907"
+      }
+    ],
+    "patch_results": [
+      {
+        "instance_id": "django__django-11039",
+        "patch_content": "diff --- a/django/core/management/commands/sqlmigrate.py\n+++ b/django/core/management/commands/sqlmigrate.py\n@@ -1,7 +1,7 @@\n # ... (file header and imports unchanged)\n \n     def handle(self, app_label, migration_name, **options):\n         connection = connections[options['database']]\n         loader = MigrationLoader(connection)\n         graph = loader.graph\n         migration = loader.get_migration(app_label, migration_name)\n-        self.output_transaction = migration.atomic\n+        # Only output an outer BEGIN/COMMIT if the migration is atomic AND\n+        # the database backend supports rolling back DDL. Some backends\n+        # (e.g. MySQL) do not support transactional DDL, so wrapping the\n+        # SQL in a transaction would be misleading.\n+        self.output_transaction = migration.atomic and connection.features.can_rollback_ddl\n \n         # rest of the command unchanged...",
+        "success": true,
+        "generation_time": 11.78066635131836,
+        "attempts": 1,
+        "token_usage": {
+          "prompt_tokens": 908,
+          "completion_tokens": 723,
+          "total_tokens": 1631
+        },
+        "error_message": null,
+        "intermediate_steps": [
+          {
+            "iteration": 1,
+            "patch_content": "diff --- a/django/core/management/commands/sqlmigrate.py\n+++ b/django/core/management/commands/sqlmigrate.py\n@@ -1,7 +1,7 @@\n # ... (file header and imports unchanged)\n \n     def handle(self, app_label, migration_name, **options):\n         connection = connections[options['database']]\n         loader = MigrationLoader(connection)\n         graph = loader.graph\n         migration = loader.get_migration(app_label, migration_name)\n-        self.output_transaction = migration.atomic\n+        # Only output an outer BEGIN/COMMIT if the migration is atomic AND\n+        # the database backend supports rolling back DDL. Some backends\n+        # (e.g. MySQL) do not support transactional DDL, so wrapping the\n+        # SQL in a transaction would be misleading.\n+        self.output_transaction = migration.atomic and connection.features.can_rollback_ddl\n \n         # rest of the command unchanged...",
+            "feedback": "Patch is valid",
+            "success": true,
+            "token_usage": {
+              "prompt_tokens": 908,
+              "completion_tokens": 723,
+              "total_tokens": 1631
+            }
+          }
+        ],
+        "confidence_score": 0.9,
+        "metadata": {},
+        "timestamp": "2026-02-06T03:17:49.287907"
+      },
+      {
+        "instance_id": "sphinx-doc__sphinx-8721",
+        "patch_content": "diff --- a/sphinx/ext/viewcode.py\n+++ b/sphinx/ext/viewcode.py\n@@ -1,6 +1,7 @@\n # -*- coding: utf-8 -*-\n \"\"\"\n Sphinx extension to add links to highlighted source code\n \"\"\"\n+from typing import Any\n \n from docutils import nodes\n from docutils.parsers.rst import directives\n@@ -300,6 +301,12 @@\n def write_module_files(app, exception):\n     \"\"\"Write the generated module source files to the output directory.\"\"\"\n+    # When building multiple builders (e.g. \"make html epub\"), this handler\n+    # will be invoked for each builder. Skip writing viewcode pages for the\n+    # epub builder unless explicitly enabled by the user.\n+    if getattr(app, 'builder', None) is not None:\n+        if getattr(app.builder, 'format', None) == 'epub' and not app.config.viewcode_enable_epub:\n+            return\n+\n     if exception is not None:\n         return\n     if not app.builder:\n         return\n@@ -316,7 +323,6 @@\n     env = app.builder.env\n     if not hasattr(env, 'viewcode_modules'):\n         return\n-    if app.builder.format == 'epub' and not app.config.viewcode_enable_epub:\n-        return\n \n     outdir = app.builder.outdir\n     # create destination dir\n     dest = os.path.join(outdir, '_modules')\n@@ -325,6 +331,5 @@\n     for modname, v in env.viewcode_modules.items():\n         path = os.path.join(dest, v['path'])\n         ensure_directory(os.path.dirname(path))\n-        f = open(path, 'w', encoding='utf-8')\n+        f = open(path, 'w', encoding='utf-8')\n         try:\n             f.write(v['html'])\n         finally:\n             f.close()",
+        "success": true,
+        "generation_time": 41.37145400047302,
+        "attempts": 2,
+        "token_usage": {
+          "prompt_tokens": 813,
+          "completion_tokens": 1560,
+          "total_tokens": 2373
+        },
+        "error_message": null,
+        "intermediate_steps": [
+          {
+            "iteration": 1,
+            "patch_content": null,
+            "feedback": "No valid patch was extracted from the response. Please provide a patch in the correct format.",
+            "success": false,
+            "token_usage": {
+              "prompt_tokens": 720,
+              "completion_tokens": 1737,
+              "total_tokens": 2457
+            }
+          },
+          {
+            "iteration": 2,
+            "patch_content": "diff --- a/sphinx/ext/viewcode.py\n+++ b/sphinx/ext/viewcode.py\n@@ -1,6 +1,7 @@\n # -*- coding: utf-8 -*-\n \"\"\"\n Sphinx extension to add links to highlighted source code\n \"\"\"\n+from typing import Any\n \n from docutils import nodes\n from docutils.parsers.rst import directives\n@@ -300,6 +301,12 @@\n def write_module_files(app, exception):\n     \"\"\"Write the generated module source files to the output directory.\"\"\"\n+    # When building multiple builders (e.g. \"make html epub\"), this handler\n+    # will be invoked for each builder. Skip writing viewcode pages for the\n+    # epub builder unless explicitly enabled by the user.\n+    if getattr(app, 'builder', None) is not None:\n+        if getattr(app.builder, 'format', None) == 'epub' and not app.config.viewcode_enable_epub:\n+            return\n+\n     if exception is not None:\n         return\n     if not app.builder:\n         return\n@@ -316,7 +323,6 @@\n     env = app.builder.env\n     if not hasattr(env, 'viewcode_modules'):\n         return\n-    if app.builder.format == 'epub' and not app.config.viewcode_enable_epub:\n-        return\n \n     outdir = app.builder.outdir\n     # create destination dir\n     dest = os.path.join(outdir, '_modules')\n@@ -325,6 +331,5 @@\n     for modname, v in env.viewcode_modules.items():\n         path = os.path.join(dest, v['path'])\n         ensure_directory(os.path.dirname(path))\n-        f = open(path, 'w', encoding='utf-8')\n+        f = open(path, 'w', encoding='utf-8')\n         try:\n             f.write(v['html'])\n         finally:\n             f.close()",
+            "feedback": "Patch is valid",
+            "success": true,
+            "token_usage": {
+              "prompt_tokens": 813,
+              "completion_tokens": 1560,
+              "total_tokens": 2373
+            }
+          }
+        ],
+        "confidence_score": 0.7,
+        "metadata": {},
+        "timestamp": "2026-02-06T03:17:49.287907"
+      }
+    ],
+    "errors": []
+  }
+}

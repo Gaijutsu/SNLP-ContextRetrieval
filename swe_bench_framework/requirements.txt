@@ -1,0 +1,27 @@
+# SWE-bench Comparison Framework - Requirements
+
+# Core dependencies
+pyyaml>=6.0
+tiktoken>=0.5.0
+
+# LLM providers
+openai>=1.0.0
+
+# Optional dependencies for RAG methods
+# rank-bm25>=0.2.2  # For BM25 indexing
+# sentence-transformers>=2.2.0  # For dense embeddings
+# faiss-cpu>=1.7.4  # For vector search
+
+# Optional dependencies for evaluation
+# codebleu>=0.6.0  # For CodeBLEU metric
+# tree-sitter>=0.20.0  # For AST parsing
+
+# Optional dependencies for experiment tracking
+# mlflow>=2.8.0
+# wandb>=0.16.0
+
+# Development dependencies (optional)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# mypy>=1.5.0
